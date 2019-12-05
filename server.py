@@ -98,7 +98,7 @@ serverPort = int(sys.argv[2])
 serverSocket = socket(AF_INET,SOCK_STREAM)
 try:
     serverSocket.bind((serverName, serverPort))
-    print('The server is ready to receive on ' + serverName + ':' + serverPort + '...')
+    print('The server is ready to receive on ' + str(serverName) + ':' + str(serverPort) + '...')
 
 except IOError as error:
     print('The server port is busy or doesn\'t exist.')
