@@ -9,56 +9,88 @@ import pickle
 from datetime import datetime
 
 
+def log(client, time, request, status):
+    os.chdir(cwd)
+    log = open("server.log", "a+")
+    log.write(str(client[0]) + ":" + str(client[1]) + "    " + time + "    " + request + "    " + status + '\n')
+
+
 def messageLen(data, client):
     length = len(pickle.dumps(data))
     client.send(pickle.dumps(length))
 
 
-def getBoards(client):
+def getBoards(client, clientAddress, time):
+    os.chdir(cwd)
+    try:
+        boards = os.listdir(path='board')
+    except:
+        print("ERROR: There is no board folder. Please create one.")
+        log(clientAddress, time, "GET_BOARDS", "ERROR")
+        sys.exit()
+
+    if boards == []:
+        print("ERROR: There are no boards in the board folder.")
+        log(clientAddress, time, "GET_BOARDS", "ERROR")
+        sys.exit()
+    else:
+        messageLen(boards, client)
+        client.send(pickle.dumps(boards))
+        print("Successfully sent list of boards.")
+        log(clientAddress, time, "GET_BOARDS", "OK")
+
+
+def post(boardNum, title, message, client, clientAddress, time):
+    try:
+        os.chdir(cwd)
+        boards = os.listdir(path='board')
+        title = title.replace(' ', '_')
+        board = boards[int(boardNum)-1]
+        boardDir = cwd + '/board'
+        chosenBoardDir = boardDir + "/" + board
+        os.chdir(chosenBoardDir)
+        messageFile = open(time + '-' + title, "w+")
+        messageFile.write(message)
+        messageFile.close()
+        success = "Message posted"
+        messageLen(success, client)
+        client.send(pickle.dumps(success))
+        print("Successfully posted message.")
+        log(clientAddress, time, "POST", "OK")
+    except:
+        print("ERROR: There was an error posting the message.")
+        log(clientAddress, time, "POST", "ERROR")
+
+
+def getMessages(boardNum,  client, clientAddress, time):
     os.chdir(cwd)
     boards = os.listdir(path='board')
-    print("sending")
-    messageLen(boards, client)
-    client.send(pickle.dumps(boards))
-
-
-def post(boardNum, title, message, client) :
-    os.chdir(cwd)
-    boards = os.listdir(path='board')
-    title = title.replace(' ', '_')
-    now = datetime.now()
-    time = now.strftime("%Y%m%d-%H%M%S")
-    board = boards[int(boardNum)-1]
-    boardDir = cwd + '/board'
-    chosenBoardDir = boardDir + "/" + board
-    os.chdir(chosenBoardDir)
-    messageFile = open(time + '-' + title, "w+")
-    messageFile.write(message)
-    messageFile.close()
-    success = "Message posted"
-    messageLen(success, client)
-    client.send(pickle.dumps(success))
-    print("Successful")
-
-
-def getMessages(boardNum,  client):
-    os.chdir(cwd)
-    boards = os.listdir(path='board')
-    messages = []
-    board = boards[int(boardNum) - 1]
-    boardDir = cwd + '/board'
-    chosenBoardDir = boardDir + "/" + board
-    os.chdir(chosenBoardDir)
-    for file in os.listdir(chosenBoardDir):
-        f = open(file, "r")
-        if f.mode == "r":
-            contents = f.read()
-        messages.append([file, contents])
-    messages = messages[-100:]
-    messageLen(messages, client)
-    client.send(pickle.dumps(messages))
-    print("Successful")
-
+    if boardNum.isdigit():
+        if len(boards) >= int(boardNum) >= 1:
+            os.chdir(cwd)
+            boards = os.listdir(path='board')
+            messages = []
+            board = boards[int(boardNum) - 1]
+            boardDir = cwd + '/board'
+            chosenBoardDir = boardDir + "/" + board
+            os.chdir(chosenBoardDir)
+            for file in os.listdir(chosenBoardDir):
+                f = open(file, "r")
+                if f.mode == "r":
+                    contents = f.read()
+                messages.append([file, contents])
+            messages.sort(reverse=True)
+            messages = messages[:100]
+            messageLen(messages, client)
+            client.send(pickle.dumps(messages))
+            print("Successfully sent recent messages.")
+            log(clientAddress, time, "GET_MESSAGES", "OK")
+        else:
+            print("ERROR: That board does not exist.")
+            log(clientAddress, time, "GET_MESSAGES", "ERROR")
+    else:
+        print("ERROR: A number was not supplied by the user.")
+        log(clientAddress, time, "GET_MESSAGES", "ERROR")
 
 
 serverName = sys.argv[1]
@@ -79,6 +111,7 @@ clients = {}
 cwd = os.getcwd()
 
 serverSocket.setblocking(False)
+logList = []
 
 while True:
 
@@ -93,13 +126,19 @@ while True:
             # That gives us new socket - client socket, connected to this given client only, it's unique for that client
             clientSocket, clientAddress = serverSocket.accept()
 
+            logList.append([clientAddress[0], clientAddress[1]])
+
             socketsList.append(clientSocket)
 
             print('Accepted new connection from {}:{}'.format(*clientAddress))
-            getBoards(clientSocket)
+            now = datetime.now()
+            time = now.strftime("%Y%m%d-%H%M%S")
+            getBoards(clientSocket, clientAddress, time)
         else:
             try:
                 pickleData = currentSocket.recv(1024)
+                now = datetime.now()
+                time = now.strftime("%Y%m%d-%H%M%S")
             except:
                 # Remove from list for socket.socket()
                 socketsList.remove(currentSocket)
@@ -117,13 +156,21 @@ while True:
             if data:
                 instruction = data[0]
                 if instruction == "GET_BOARDS":
-                    getBoards(clientSocket)
+                    print(clientSocket)
+                    getBoards(clientSocket, clientAddress, time)
                 elif instruction == "POST":
                     boardNum = data[1]
                     title = data[2]
                     message = data[3]
-                    post(boardNum, title, message, clientSocket)
+                    if boardNum == "" or title == "" or message == "":
+                        print("ERROR: There was a problem with one of the parameters.")
+                        log(clientAddress, time, "POST", "ERROR")
+                    else:
+                        post(boardNum, title, message, clientSocket, clientAddress, time)
                 elif instruction == "GET_MESSAGES":
-                    getMessages(data[1], clientSocket)
+                    getMessages(data[1], clientSocket, clientAddress, time)
+                else:
+                    print("ERROR: Not a defined instruction.")
+                    log(clientAddress, time, "UNKNOWD", "ERROR")
 
 

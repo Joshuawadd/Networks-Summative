@@ -8,13 +8,18 @@ import pickle
 def getBoards():
     instruction = ["GET_BOARDS"]
     clientSocket.send(pickle.dumps(instruction))
-    length = pickle.loads(clientSocket.recv(10))
-    pickleBoardList = clientSocket.recv(length)
-    boardList = pickle.loads(pickleBoardList)
+    try:
+        length = pickle.loads(clientSocket.recv(10))
+        pickleBoardList = clientSocket.recv(length)
+        boardList = pickle.loads(pickleBoardList)
+    except:
+        print("ERROR: There was an error getting the boards from the server.")
+        quit()
     a = 1
     print("From server: ")
     for i in boardList:
-        print(a, ': ', i)
+        boardName = i.replace('_', ' ')
+        print(a, ': ', boardName)
         a = a + 1
     return boardList
 
@@ -29,7 +34,6 @@ def post():
         try:
             if len(boardList) >= int(boardNum) >= 1:
                 numSelection = False
-                print("Not a valid board selection.")
             else:
                 numSelection = True
                 print("Not a valid board selection.")
@@ -42,22 +46,29 @@ def post():
     message = input('Input the message: ')
     information.append(message)
     clientSocket.send(pickle.dumps(information))
-    length = pickle.loads(clientSocket.recv(10))
-    print(pickle.loads(clientSocket.recv(length)))
+    try:
+        length = pickle.loads(clientSocket.recv(10))
+        print(pickle.loads(clientSocket.recv(length)))
+    except:
+        print("ERROR: There was an error posting the message")
 
 
 def getMessages(boardNum):
     information = ["GET_MESSAGES", boardNum]
     clientSocket.send(pickle.dumps(information))
-    length = pickle.loads(clientSocket.recv(10))
-    print(length)
-    messageList = pickle.loads(clientSocket.recv(length))
+    try:
+        length = pickle.loads(clientSocket.recv(10))
+        messageList = pickle.loads(clientSocket.recv(length))
+    except:
+        print("ERROR: There was an error getting the recent messages.")
+        return
     if messageList == []:
         print("There are no messages on this board")
     else:
         print("Most recent messages from this board: ")
         print()
-        for i in reversed(messageList):
+        for i in messageList:
+            i[0] =i[0].replace('_', ' ')
             print(i[0] , " : ", '"', i[1], '"')
     print()
 
@@ -69,15 +80,24 @@ def quit():
 serverName = sys.argv[1]
 serverPort = int(sys.argv[2])
 clientSocket = socket(AF_INET, SOCK_STREAM)
-clientSocket.connect((serverName, serverPort))
-length = pickle.loads(clientSocket.recv(10))
-pickleBoardList = clientSocket.recv(length)
-boardList = pickle.loads(pickleBoardList)
-print(boardList)
+try:
+    clientSocket.connect((serverName, serverPort))
+except:
+    print("The server is  not running/unavailable.")
+    quit()
+clientSocket.settimeout(10)
+try:
+    length = pickle.loads(clientSocket.recv(10))
+    pickleBoardList = clientSocket.recv(length)
+    boardList = pickle.loads(pickleBoardList)
+except:
+    print("There was an error getting the boards from the server.")
+    quit()
 a = 1
 print("From server: ")
 for i in boardList:
-    print(a, ': ', i)
+    boardName = i.replace('_', ' ')
+    print(a, ': ', boardName)
     a = a + 1
 print("Please enter one of the following commands:")
 print()
@@ -96,6 +116,10 @@ while True:
     elif command.isdigit():
         if len(boardList) >= int(command) >= 1:
             getMessages(command)
+    else:
+        print("ERROR: Please enter a correct command.")
+        print()
+        clientSocket.send(pickle.dumps(command))
 
 
 
