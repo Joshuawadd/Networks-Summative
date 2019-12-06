@@ -94,15 +94,15 @@ def getMessages(boardNum,  client, clientAddress, time):
 
 
 serverName = sys.argv[1]
-serverPort = int(sys.argv[2])
+serverPort = sys.argv[2]
 serverSocket = socket(AF_INET,SOCK_STREAM)
 try:
-    serverSocket.bind((serverName, serverPort))
-    print('The server is ready to receive on ' + str(serverName) + ':' + str(serverPort) + '...')
-
-except IOError as error:
-    print('The server port is busy or doesn\'t exist.')
+    serverSocket.bind((serverName, int(serverPort)))
+    print(f'The server is ready to recieve on {serverName}:{serverPort}...')
+except:
+    print('The server port is busy or doesn\'t exist.'.format(str(error)))
     sys.exit()
+
 serverSocket.listen(1)
 
 socketsList = [serverSocket]
@@ -156,7 +156,6 @@ while True:
             if data:
                 instruction = data[0]
                 if instruction == "GET_BOARDS":
-                    print(clientSocket)
                     getBoards(clientSocket, clientAddress, time)
                 elif instruction == "POST":
                     boardNum = data[1]
@@ -171,6 +170,6 @@ while True:
                     getMessages(data[1], clientSocket, clientAddress, time)
                 else:
                     print("ERROR: Not a defined instruction.")
-                    log(clientAddress, time, "UNKNOWD", "ERROR")
+                    log(clientAddress, time, "UNKNOWN", "ERROR")
 
 
