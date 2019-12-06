@@ -94,7 +94,7 @@ serverPort = sys.argv[2]
 serverSocket = socket(AF_INET,SOCK_STREAM)
 try:
     serverSocket.bind((serverName, int(serverPort)))
-    print(f'The server is ready to receive on {serverName}:{serverPort}...')
+    print('The server is ready to receive on ' + serverName + ':' + serverPort + '...')
 except:
     print('The server port is busy or doesn\'t exist.'.format(str(error)))
     sys.exit()
