@@ -11,12 +11,16 @@ from datetime import datetime
 
 def log(client, time, request, status):
     os.chdir(cwd)
+    # resets to main directory
     log = open("server.log", "a+")
+    # Opens file to append, creates the file if it does not exist.
     log.write(str(client[0]) + ":" + str(client[1]) + "    " + time + "    " + request + "    " + status + '\n')
+    # writes to the file the variables with tabs in between.
 
 
 def messageLen(data, client):
     length = len(pickle.dumps(data))
+    # calculates the size of the data and sends it to the client.
     client.send(pickle.dumps(length))
 
 
@@ -98,7 +102,7 @@ serverPort = sys.argv[2]
 serverSocket = socket(AF_INET,SOCK_STREAM)
 try:
     serverSocket.bind((serverName, int(serverPort)))
-    print(f'The server is ready to recieve on {serverName}:{serverPort}...')
+    print(f'The server is ready to receive on {serverName}:{serverPort}...')
 except:
     print('The server port is busy or doesn\'t exist.'.format(str(error)))
     sys.exit()
@@ -106,12 +110,10 @@ except:
 serverSocket.listen(1)
 
 socketsList = [serverSocket]
-clients = {}
 
 cwd = os.getcwd()
 
 serverSocket.setblocking(False)
-logList = []
 
 while True:
 
@@ -126,8 +128,6 @@ while True:
             # That gives us new socket - client socket, connected to this given client only, it's unique for that client
             clientSocket, clientAddress = serverSocket.accept()
 
-            logList.append([clientAddress[0], clientAddress[1]])
-
             socketsList.append(clientSocket)
 
             print('Accepted new connection from {}:{}'.format(*clientAddress))
@@ -139,6 +139,7 @@ while True:
                 pickleData = currentSocket.recv(1024)
                 now = datetime.now()
                 time = now.strftime("%Y%m%d-%H%M%S")
+                data = pickle.loads(pickleData)
             except:
                 # Remove from list for socket.socket()
                 socketsList.remove(currentSocket)
@@ -147,12 +148,8 @@ while True:
                 # Remove from our list of users
 
                 pickleData = []
-
-                continue
-            try:
-                data = pickle.loads(pickleData)
-            except EOFError:
                 data = []
+                continue
             if data:
                 instruction = data[0]
                 if instruction == "GET_BOARDS":

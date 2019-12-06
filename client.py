@@ -78,10 +78,10 @@ def quit():
 
 
 serverName = sys.argv[1]
-serverPort = int(sys.argv[2])
+serverPort = sys.argv[2]
 clientSocket = socket(AF_INET, SOCK_STREAM)
 try:
-    clientSocket.connect((serverName, serverPort))
+    clientSocket.connect((serverName, int(serverPort)))
 except:
     print("The server is  not running/unavailable.")
     quit()
