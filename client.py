@@ -9,8 +9,7 @@ def getBoards():
     instruction = ["GET_BOARDS"]
     clientSocket.send(pickle.dumps(instruction))
     try:
-        length = pickle.loads(clientSocket.recv(10))
-        pickleBoardList = clientSocket.recv(length)
+        pickleBoardList = clientSocket.recv(1024)
         boardList = pickle.loads(pickleBoardList)
     except:
         print("ERROR: There was an error getting the boards from the server.")
@@ -47,8 +46,7 @@ def post():
     information.append(message)
     clientSocket.send(pickle.dumps(information))
     try:
-        length = pickle.loads(clientSocket.recv(10))
-        print(pickle.loads(clientSocket.recv(length)))
+        print(pickle.loads(clientSocket.recv(1024)))
     except:
         print("ERROR: There was an error posting the message")
 
@@ -57,8 +55,7 @@ def getMessages(boardNum):
     information = ["GET_MESSAGES", boardNum]
     clientSocket.send(pickle.dumps(information))
     try:
-        length = pickle.loads(clientSocket.recv(10))
-        messageList = pickle.loads(clientSocket.recv(length))
+        messageList = pickle.loads(clientSocket.recv(1024))
     except:
         print("ERROR: There was an error getting the recent messages.")
         return
@@ -87,8 +84,7 @@ except:
     quit()
 clientSocket.settimeout(10)
 try:
-    length = pickle.loads(clientSocket.recv(10))
-    pickleBoardList = clientSocket.recv(length)
+    pickleBoardList = clientSocket.recv(1024)
     boardList = pickle.loads(pickleBoardList)
 except:
     print("There was an error getting the boards from the server.")
@@ -116,6 +112,10 @@ while True:
     elif command.isdigit():
         if len(boardList) >= int(command) >= 1:
             getMessages(command)
+        else:
+            print("ERROR: Please enter the number of an available board.")
+            clientSocket.send(pickle.dumps(command))
+
     else:
         print("ERROR: Please enter a correct command.")
         print()

@@ -18,12 +18,6 @@ def log(client, time, request, status):
     # writes to the file the variables with tabs in between.
 
 
-def messageLen(data, client):
-    length = len(pickle.dumps(data))
-    # calculates the size of the data and sends it to the client.
-    client.send(pickle.dumps(length))
-
-
 def getBoards(client, clientAddress, time):
     os.chdir(cwd)
     try:
@@ -38,7 +32,7 @@ def getBoards(client, clientAddress, time):
         log(clientAddress, time, "GET_BOARDS", "ERROR")
         sys.exit()
     else:
-        messageLen(boards, client)
+
         client.send(pickle.dumps(boards))
         print("Successfully sent list of boards.")
         log(clientAddress, time, "GET_BOARDS", "OK")
@@ -57,7 +51,6 @@ def post(boardNum, title, message, client, clientAddress, time):
         messageFile.write(message)
         messageFile.close()
         success = "Message posted"
-        messageLen(success, client)
         client.send(pickle.dumps(success))
         print("Successfully posted message.")
         log(clientAddress, time, "POST", "OK")
@@ -85,7 +78,6 @@ def getMessages(boardNum,  client, clientAddress, time):
                 messages.append([file, contents])
             messages.sort(reverse=True)
             messages = messages[:100]
-            messageLen(messages, client)
             client.send(pickle.dumps(messages))
             print("Successfully sent recent messages.")
             log(clientAddress, time, "GET_MESSAGES", "OK")
